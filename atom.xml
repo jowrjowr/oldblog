@@ -4,7 +4,7 @@
   <title><![CDATA[Advenatures in computing]]></title>
   <link href="http://jowrjowr.github.io/atom.xml" rel="self"/>
   <link href="http://jowrjowr.github.io/"/>
-  <updated>2014-10-23T10:39:54+00:00</updated>
+  <updated>2014-10-23T12:50:58+00:00</updated>
   <id>http://jowrjowr.github.io/</id>
   <author>
     <name><![CDATA[Eric Gisse]]></name>
@@ -12,5 +12,26 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Time for a New Blog]]></title>
+    <link href="http://jowrjowr.github.io/blog/2014/10/23/time-for-a-new-blog/"/>
+    <updated>2014-10-23T10:43:05+00:00</updated>
+    <id>http://jowrjowr.github.io/blog/2014/10/23/time-for-a-new-blog</id>
+    <content type="html"><![CDATA[<h1>Time for a new blog</h1>
+
+<h3>Who am I?</h3>
+
+<p>I&rsquo;m Eric, and I decided to start writing about various little projects and efforts I am working on. This has the dual benefits of putting myself out there in a positive light, and to document weirdnesses in various projects that I run that I would like to make public.</p>
+
+<p>I work as an erstwhile Linux syadmin / consultant / developer. My principle focus at this point in time is <a href="http://www.puppetlabs.com">Puppet</a> configuration management, and the special hell that can occasioanlly turn into. Most of my work goes through oDesk, and you can see my oDesk profile <a href="https://www.odesk.com/o/profiles/users/_~01f2546e9a35daff31/">here</a>.</p>
+
+<h3>What am I doing?</h3>
+
+<p>Currently I&rsquo;m working on a fair number of client projects but the current interest that&rsquo;ll get the majority of my discussion time is properly teaching myself SELinux via building a fully secure Tor exit node on top of Gentoo, my preferred distribution for anything that deviates from the nice little box that the RHEL family builds for you.</p>
+
+<p>I&rsquo;m also figuring out how to run Octopress as a blogging platform. Its&#8217; being a pain in the ass but I&rsquo;m getting the hang of it and I love it far more than the infinitely insecure Wordpress platform, which is such a piece of shit when it comes to security that it boggles the mind.</p>
+]]></content>
+  </entry>
   
 </feed>
