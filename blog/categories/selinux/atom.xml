@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Advenatures in computing]]></title>
-  <link href="http://jowrjowr.github.io/atom.xml" rel="self"/>
+  <title><![CDATA[Category: Selinux, | Advenatures in computing]]></title>
+  <link href="http://jowrjowr.github.io/blog/categories/selinux/atom.xml" rel="self"/>
   <link href="http://jowrjowr.github.io/"/>
   <updated>2014-10-23T14:07:11+00:00</updated>
   <id>http://jowrjowr.github.io/</id>
@@ -203,75 +203,6 @@ system_u                  system_u
 <p>One you make sure the munin user is a member of that group (defualt of 10, I moved that way the fuck up so I&rsquo;m not giving munin wheel) you can then view privileged /proc information once again.</p>
 
 <p>Neat.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Perl Fastcgi]]></title>
-    <link href="http://jowrjowr.github.io/blog/2014/10/23/perl-fastcgi/"/>
-    <updated>2014-10-23T13:16:42+00:00</updated>
-    <id>http://jowrjowr.github.io/blog/2014/10/23/perl-fastcgi</id>
-    <content type="html"><![CDATA[<h3>Perl FastCGI</h3>
-
-<p>If you want to run a script (eg, php or perl) as an application on a webserver you have to actually run the script and do various &ldquo;things&rdquo; to manage processes, output, permissions, etc.</p>
-
-<p>The PHP ecosystem has this down pat. Perl, not as much.</p>
-
-<p>When you search for running Perl in FastCGI, you find something like <a href="http://nginxlibrary.com/perl-fastcgi/">this</a> invariably.</p>
-
-<p>The problem is that the scripts do not support running as <em>anything</em> other than <strong>root</strong>. Further, any script STDERR output goes straight into the void so good fucking luck figuring out what&rsquo;s going on.</p>
-
-<h3>Let&rsquo;s unfuck this</h3>
-
-<h4>Why?</h4>
-
-<p>A part of one of my projects involves a fair amount of perl as a part of its&#8217; backend that also serves as the frontend administrative interface.</p>
-
-<h4>Oh yeah, <em>fuck PHP</em>.</h4>
-
-<p>Why perl? Because <em>fuck PHP</em>. Why <em>fuck PHP</em>? Read these for an introduction as to the horrors of the PHP ecosystem:</p>
-
-<ol>
-<li><p><a href="http://blog.parse.com/2014/08/05/parse-for-php-a-fractal-of-rad-design/">http://blog.parse.com/2014/08/05/parse-for-php-a-fractal-of-rad-design/</a></p></li>
-<li><p><a href="http://www.reddit.com/r/lolphp">http://www.reddit.com/r/lolphp</a></p></li>
-<li><p><a href="http://blog.codinghorror.com/the-php-singularity/">http://blog.codinghorror.com/the-php-singularity/</a></p></li>
-<li><p><a href="https://github.com/search?p=1&amp;q=extension%3Aphp+mysql_query+%24_GET&amp;ref=searchresults&amp;type=Code">oh holy shit</a></p></li>
-</ol>
-
-
-<p>But since PHP is a bit less popular than Perl, the ecosystem is a bit less developed so you have to put in some <em>manual labor</em>.</p>
-
-<h4>RESULT!</h4>
-
-<p>The end result (init script + perl CGI script) is uploaded to github <a href="https://github.com/jowrjowr/personal/tree/master/perl_fastcgi">here</a>.</p>
-
-<ul>
-<li>You can run as something <em>other</em> than root.</li>
-<li>Actual error trapping and logging to syslog.</li>
-<li>Script errors get logged to syslog.</li>
-</ul>
-
-
-<p>This isn&rsquo;t fully where I want it to be but it is a huge improvement and running in production right now. Much happier with it than before.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Time for a New Blog]]></title>
-    <link href="http://jowrjowr.github.io/blog/2014/10/23/time-for-a-new-blog/"/>
-    <updated>2014-10-23T10:43:05+00:00</updated>
-    <id>http://jowrjowr.github.io/blog/2014/10/23/time-for-a-new-blog</id>
-    <content type="html"><![CDATA[<h3>Who am I?</h3>
-
-<p>I&rsquo;m Eric, and I decided to start writing about various little projects and efforts I am working on. This has the dual benefits of putting myself out there in a positive light, and to document weirdnesses in various projects that I run that I would like to make public.</p>
-
-<p>I work as an erstwhile Linux syadmin / consultant / developer. My principle focus at this point in time is <a href="http://www.puppetlabs.com">Puppet</a> configuration management, and the special hell that can occasioanlly turn into. Most of my work goes through oDesk, and you can see my oDesk profile <a href="https://www.odesk.com/o/profiles/users/_~01f2546e9a35daff31/">here</a>.</p>
-
-<h3>What am I doing?</h3>
-
-<p>Currently I&rsquo;m working on a fair number of client projects but the current interest that&rsquo;ll get the majority of my discussion time is properly teaching myself SELinux via building a fully secure Tor exit node on top of Gentoo, my preferred distribution for anything that deviates from the nice little box that the RHEL family builds for you.</p>
-
-<p>I&rsquo;m also figuring out how to run Octopress as a blogging platform. Its&#8217; being a pain in the ass but I&rsquo;m getting the hang of it and I love it far more than the infinitely insecure Wordpress platform, which is such a piece of shit when it comes to security that it boggles the mind.</p>
 ]]></content>
   </entry>
   

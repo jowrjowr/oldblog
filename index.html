@@ -9,7 +9,7 @@
   <meta name="author" content="Eric Gisse">
 
   
-  <meta name="description" content="Perl FastCGI If you want to run a script (eg, php or perl) as an application on a webserver you have to actually run the script and do various &ldquo &hellip;">
+  <meta name="description" content="So one of my personal projects is a 15 EUR/mo online.net tor exit node where I can tinker with puppet, selinux, gentoo, tor, security related &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,219 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/23/gentoo-and-selinux/">Gentoo and SELinux</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-10-23T13:22:13+00:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2014</span></span> <span class='time'>1:22 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>So one of my personal projects is a 15 EUR/mo online.net tor exit node where I can tinker with puppet, selinux, gentoo, tor, security related thingies, and anything else that strikes my whim.</p>
+
+<h3>Oh shit</h3>
+
+<p>The problem is that SELinux is <em>hard</em>. Even in the optimal situation of doing this with RHEL, its&#8217; a brittle little nightmare that doesn&rsquo;t function for <em>beans</em> outside of the RHEL dotted line of what Redhat wants you to do. Which is rarely what <em>I</em> want to do.</p>
+
+<p>So I&rsquo;m using this as a process to teach myself how to properly make all of this shit work together. There is a <em>lot</em> to be written. For some reason.</p>
+
+<h3>Bugs, pains in the ass, and gripes <em>already</em>?</h3>
+
+<p><strong>Yep</strong>.</p>
+
+<p>Here&rsquo;s what I&rsquo;ve ran into thus far, and how I&rsquo;m combating it:</p>
+
+<h2>1. irqbalance</h2>
+
+<p>Having irqbalance is semi-important due to spreading network and other cpu interrupts across a multicore system rather than splashing them on CPU 0 all the time.</p>
+
+<p>Unfortunately it doesn&rsquo;t work by default out of the box without a little bit of tinkering (manually installing the irqbalance selinux policy).</p>
+
+<p>Gentoo bug report <a href="https://bugs.gentoo.org/show_bug.cgi?id=525724">filed</a></p>
+
+<h2>2. Management issues</h2>
+
+<p>When you login (as root) by default, you get a user context of the following:</p>
+
+<pre><code># id -Z
+root:staff_r:staff_t
+</code></pre>
+
+<p>The problem is that the staff_t context isn&rsquo;t sufficient for a lot of things. Mostly relating to init scripts and package installation.</p>
+
+<p>For example, if you try to install a random package via emerge in the staff_t role you get this confusing heap of crap:</p>
+
+<pre><code># emerge ntp
+Calculating dependencies... done!
+
+&gt;&gt;&gt; Verifying ebuild manifests
+
+&gt;&gt;&gt; Emerging (1 of 1) net-misc/ntp-4.2.6_p5-r11::gentoo
+ * ntp-4.2.6p5.tar.gz SHA256 SHA512 WHIRLPOOL size ;-) ...                                                                                                                              
+ [ ok ]
+ * ntp-4.2.6p5-manpages.tar.bz2 SHA256 SHA512 WHIRLPOOL size ;-) ...                                                                                                                
+ [ ok ]
+[Errno 22] Invalid argument:
+   /usr/bin/sandbox /usr/lib/portage/python2.7/ebuild.sh unpack
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/site-packages/portage/process.py", line 317, in spawn
+    unshare_net, unshare_ipc, cgroup)
+  File "/usr/lib64/python2.7/site-packages/portage/process.py", line 512, in _exec
+    pre_exec()
+  File "/usr/lib64/python2.7/site-packages/portage/_selinux.py", line 119, in _pre_exec
+    setexec(self._con)
+  File "/usr/lib64/python2.7/site-packages/portage/_selinux.py", line 80, in setexec
+    if selinux.setexeccon(ctx) &lt; 0:
+OSError: [Errno 22] Invalid argument
+</code></pre>
+
+<p>Only after a lot (a little bit) of research do you learn that the error message is a result of the fact you need to have the sysadm_r role. If you pivot over with the following command, you are <em>golden</em>:</p>
+
+<pre><code># id -Z
+root:staff_r:staff_t
+# newrole -r sysadm_r
+Password: 
+# id -Z
+root:sysadm_r:sysadm_t
+</code></pre>
+
+<p>This will let you install packages and stuff. And restart vixie-cron.</p>
+
+<p><strong><em>Huh, cron?</em></strong></p>
+
+<p>If you restart vixie-cron via the staff_r role, cron will run via the staff_r role:</p>
+
+<pre><code># ps auxZ | grep cron
+root:staff_r:staff_t            root     11204  0.0  0.0  23484  2236 ?        Ss   13:39   0:00 /usr/sbin/cron
+</code></pre>
+
+<p>This results in all sorts of confusing stuff:</p>
+
+<pre><code># tail /var/log/cron.log
+
+Oct 23 13:39:58 testbed cron[11204]: (CRON) STARTUP (V5.0)  
+Oct 23 13:39:58 testbed cron[11204]: (system_u) NO CONTEXT (/etc/crontab)
+Oct 23 13:39:58 testbed cron[11204]: (munin) NO CONTEXT (crontabs/munin)
+Oct 23 13:39:58 testbed cron[11204]: (root) ENTRYPOINT FAILED (crontabs/root)
+</code></pre>
+
+<p>You&rsquo;ll waste <em>a lot</em> of time figuring out why /etc/crontab has the wrong selinux permissions.</p>
+
+<p>The simple answer is to make sure vixie-cron runs under sysadm_r so it can transition properly to system_r:</p>
+
+<pre><code># ps auxZ | grep cron
+system_u:system_r:crond_t       root     11322  0.0  0.0  23484  2220 ?        Ss   13:42   0:00 /usr/sbin/cron
+</code></pre>
+
+<p>I have filed <a href="https://bugs.gentoo.org/show_bug.cgi?id=525726">a bug</a> on the portage issue to hopefully make things a bit more clear, as things are hard enough without cryptic shit being thrown at you.</p>
+
+<h2>3. munin</h2>
+
+<p>This is an ongoing nuisance, and is <em>already</em> running into some serious issues.</p>
+
+<p>When you build munin with USE=&ldquo;cron&rdquo; or build the cron entry direct via a puppet cron resource, you&rsquo;ll get this cryptic-as-fuck error message from cron:</p>
+
+<pre><code>Oct 22 22:08:39 testbed cron[29465]: (CRON) STARTUP (V5.0)
+Oct 22 22:08:39 testbed cron[29465]: (munin) ENTRYPOINT FAILED (crontabs/munin)
+</code></pre>
+
+<p><em>&ldquo;What the fuck?&rdquo;</em> is exactly what I settled on as a response, given it had (ostensibly) the proper contexts and all that:</p>
+
+<pre><code># ls -Z /var/spool/cron/crontabs/munin
+root:object_r:user_cron_spool_t /var/spool/cron/crontabs/munin
+</code></pre>
+
+<p>After a less-trivial bit of research and learning, it is learned that the crontab entry doesn&rsquo;t have a &ldquo;default&rdquo; context that is specified. Not surprising in hindsight, but not something that you normally think about.</p>
+
+<pre><code># matchpathcon /var/spool/cron/crontabs/munin
+/var/spool/cron/crontabs/munin  &lt;&lt;none&gt;&gt;
+</code></pre>
+
+<p>So what this means is that when you build the munin (or any, really) cron entry, it&rsquo;ll get the root:object_r:user_cron_spool_t  permissions.</p>
+
+<p>The problem is this:</p>
+
+<pre><code># semanage login -l
+
+Login Name                SELinux User             
+
+__default__               user_u                   
+root                      root                     
+system_u                  system_u   
+</code></pre>
+
+<p>What <em>that</em> means is that the only user on the system that has a designated selinux user (the first entry in the a:b:c context triad) is <strong>root</strong>. Everybody <em>else</em> gets user_u.</p>
+
+<p>So when cron tries to do the transition from whatever cron runs as to the specific context, it fails with the following message:</p>
+
+<pre><code>Oct 22 22:08:39 testbed cron[29465]: (munin) ENTRYPOINT FAILED (crontabs/munin)
+</code></pre>
+
+<p>Why? Because the selinux user of &ldquo;root&rdquo; isn&rsquo;t associated with the munin linux user.</p>
+
+<p>To solve this, I set the munin cron file&rsquo;s selinux user to user_u with the following command, and things ran nice and fat + happy:</p>
+
+<pre><code># chcon -u user_u /var/spool/cron/crontabs/munin
+</code></pre>
+
+<p>Result:</p>
+
+<pre><code>Oct 22 22:15:01 testbed cron[29531]: (munin) CMD (/usr/bin/munin-cron)
+</code></pre>
+
+<p>I&rsquo;ve filed <a href="https://bugs.gentoo.org/show_bug.cgi?id=526532">a bug</a> on this due to how <em>fucked</em> this behavior is.</p>
+
+<p>I&rsquo;m not sure how to properly globally fix this one, or for that matter how this works on other SELinux implementations. But at lease for my part, its&#8217; easy to fix with puppet:</p>
+
+<pre><code>  cron { "munin-cron":
+        command         =&gt; "/usr/bin/munin-cron",
+        user            =&gt; "munin",
+        hour            =&gt; "*",
+        minute          =&gt; "*/5",
+  }
+
+  # workaround for https://bugs.gentoo.org/show_bug.cgi?id=526532
+
+  file { "/var/spool/cron/crontabs/munin":
+        seluser         =&gt; "user_u",
+        require         =&gt; Cron["munin-cron"],
+  }
+</code></pre>
+
+<h2>4. More fucking munin</h2>
+
+<p>I like to have functionally useful statistics, which include stuff like firewall information. Which is neat when you are fully saturating a link with a tor exit node.</p>
+
+<p>The problem is with a grsecurity-enabled kernel is that /proc is locked down reasonably heavily such that you can&rsquo;t grab process statistics from other users, so you get undefined or null values when you run affected munin plugins.</p>
+
+<p>Solving this requires you to take advantage of the /proc user. For a Gentoo hardened kernel:</p>
+
+<pre><code>Security Options --&gt; Grsecurity --&gt; Default Special Groups --&gt; "GID exempted from /proc restrictions"
+</code></pre>
+
+<p>One you make sure the munin user is a member of that group (defualt of 10, I moved that way the fuck up so I&rsquo;m not giving munin wheel) you can then view privileged /proc information once again.</p>
+
+<p>Neat.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -186,6 +399,10 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/10/23/gentoo-and-selinux/">Gentoo and SELinux</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/10/23/perl-fastcgi/">Perl Fastcgi</a>
