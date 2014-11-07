@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Munin, | Advenatures in computing]]></title>
   <link href="http://jowrjowr.github.io/blog/categories/munin/atom.xml" rel="self"/>
   <link href="http://jowrjowr.github.io/"/>
-  <updated>2014-10-23T14:07:11+00:00</updated>
+  <updated>2014-11-06T19:25:54-06:00</updated>
   <id>http://jowrjowr.github.io/</id>
   <author>
     <name><![CDATA[Eric Gisse]]></name>
@@ -16,7 +16,7 @@
   <entry>
     <title type="html"><![CDATA[Gentoo and SELinux]]></title>
     <link href="http://jowrjowr.github.io/blog/2014/10/23/gentoo-and-selinux/"/>
-    <updated>2014-10-23T13:22:13+00:00</updated>
+    <updated>2014-10-23T08:22:13-05:00</updated>
     <id>http://jowrjowr.github.io/blog/2014/10/23/gentoo-and-selinux</id>
     <content type="html"><![CDATA[<p>So one of my personal projects is a 15 EUR/mo online.net tor exit node where I can tinker with puppet, selinux, gentoo, tor, security related thingies, and anything else that strikes my whim.</p>
 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Pax | Advenatures in computing]]></title>
+  <link href="http://jowrjowr.github.io/blog/categories/pax/atom.xml" rel="self"/>
+  <link href="http://jowrjowr.github.io/"/>
+  <updated>2014-11-06T19:25:54-06:00</updated>
+  <id>http://jowrjowr.github.io/</id>
+  <author>
+    <name><![CDATA[Eric Gisse]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Adventures With PaX]]></title>
+    <link href="http://jowrjowr.github.io/blog/2014/11/06/adventures-with-pax/"/>
+    <updated>2014-11-06T19:00:21-06:00</updated>
+    <id>http://jowrjowr.github.io/blog/2014/11/06/adventures-with-pax</id>
+    <content type="html"><![CDATA[<p>As a part of running an exit node and wanting to experiment more with Linux hardening, I built out a nice Gentoo hardened-sources (3.16.5) kernel.</p>
+
+<p>This has not been an issue for me as I&rsquo;ve used grsecurity features for years. But the new system had some <em>crazy</em> instability. It resulted in miscellaneous kernel panics like this:</p>
+
+<pre><code>Oct 27 09:52:53 REDACTED [23041.341354] general protection fault: 0000 [#4]
+Oct 27 09:52:53 REDACTED SMP
+Oct 27 09:52:53 REDACTED
+Oct 27 09:52:53 REDACTED [23041.341413] Modules linked in:
+Oct 27 09:52:53 REDACTED xt_DELUDE(O)
+Oct 27 09:52:53 REDACTED xt_CHAOS(O)
+Oct 27 09:52:53 REDACTED xt_TARPIT(O)
+Oct 27 09:52:53 REDACTED
+Oct 27 09:52:53 REDACTED [23041.341476] CPU: 6 PID: 3052 Comm: tor Tainted: G D O 3.17.1-hardened #1
+Oct 27 09:52:53 REDACTED [23041.341538] Hardware name: Supermicro A1SA2-2750F/A1SA2-2750F, BIOS 1.0a 07/14/2014
+Oct 27 09:52:53 REDACTED [23041.341600] task: ffff880276ed6b10 ti: ffff880276ed6f60 task.ti: ffff880276ed6f60
+Oct 27 09:52:53 REDACTED [23041.341660] RIP: 0010:[&lt;ffffffff814b58ce&gt;]
+Oct 27 09:52:53 REDACTED [&lt;ffffffff814b58ce&gt;] __nf_conntrack_find_get+0x6e/0x290
+Oct 27 09:52:53 REDACTED [23041.341732] RSP: 0018:ffffc90006073930 EFLAGS: 00010246
+Oct 27 09:52:53 REDACTED [23041.341770] RAX: 0000000000014230 RBX: fefefefefefefefe RCX: 0000000000014a70
+Oct 27 09:52:53 REDACTED [23041.341811] RDX: 000000000000294e RSI: 00000000000266e2 RDI: 00000000fefefefe
+Oct 27 09:52:53 REDACTED [23041.341852] RBP: ffffc90006073958 R08: 0000000073a1bccf R09: 00000000bd127271
+Oct 27 09:52:53 REDACTED [23041.341894] R10: ffffc900060739c0 R11: ffff880273943f08 R12: ffffc900060739a8
+Oct 27 09:52:53 REDACTED [23041.341935] R13: 0000000000000000 R14: 00000000a538c88a R15: ffffffff81a7e240
+Oct 27 09:52:53 REDACTED [23041.341976] FS: 0000031cb9d65700(0000) GS:ffff88027fd80000(0000) knlGS:0000000000000000
+Oct 27 09:52:53 REDACTED [23041.342037] CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Oct 27 09:52:53 REDACTED [23041.342077] CR2: 000002faa3f38000 CR3: 0000000001654000 CR4: 00000000001007f0
+Oct 27 09:52:53 REDACTED [23041.342117] Stack:
+Oct 27 09:52:53 REDACTED [23041.342147] ffff880211a540e0
+</code></pre>
+
+<p>While I am many things, I am not a skilled kernel hacker so the best I can do on my own is to figure out something is going on in the netfilter subsystem.</p>
+
+<p>I then proceed to ask the grsecurity folks if they know what the fuck is going on: <a href="https://forums.grsecurity.net/viewtopic.php?f=1&amp;t=4071&amp;e=0">https://forums.grsecurity.net/viewtopic.php?f=1&amp;t=4071&amp;e=0</a></p>
+
+<p>After some discussion between myself and the grsec folks, then myself <a href="http://marc.info/?l=netfilter-devel&amp;m=141476930929914&amp;w=2">and then the netfilter folks</a> it turns out this was an issue with a hip-pocket feature of PaX called PAX_MEMORY_SANITIZE:</p>
+
+<blockquote><p>By saying Y here the kernel will erase memory pages and slab objects
+as soon as they are freed.  This in turn reduces the lifetime of data
+stored in them, making it less likely that sensitive information such
+as passwords, cryptographic secrets, etc stay in memory for too long.</p>
+
+<p>See: <a href="https://en.wikibooks.org/wiki/Grsecurity/Appendix/Grsecurity_and_PaX_Configuration_Options#Sanitize_all_freed_memory">grsecurity wiki</a></p></blockquote>
+
+<p>Apparently the memory sanitization was wiping an entry in the netfilter hash table, which contains the list of things used by iptables&#8217; connection tracking feature. The problem came in when the wiping was done on an entry that was not fully yet marked as freed.</p>
+
+<p>This appears to be a bit of a race condition that only infrequently (in an absolute sense - once every few hundred million conntrack entries) but that occurs quickly on a busy machine like mine.</p>
+
+<p>The grsecurity/PaX folks have this fixed now, and seems to have resulted in fixing some other misc. issues folks were seeing. Yay!</p>
+
+<p>I even filed a hardened kernel <a href="https://bugs.gentoo.org/show_bug.cgi?id=527668">bug report</a>  for grins.</p>
+]]></content>
+  </entry>
+  
+</feed>
