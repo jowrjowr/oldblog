@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Nfs | Advenatures in computing]]></title>
   <link href="http://jowrjowr.github.io/blog/categories/nfs/atom.xml" rel="self"/>
   <link href="http://jowrjowr.github.io/"/>
-  <updated>2014-11-14T01:55:15-06:00</updated>
+  <updated>2014-11-14T01:58:03-06:00</updated>
   <id>http://jowrjowr.github.io/</id>
   <author>
     <name><![CDATA[Eric Gisse]]></name>
@@ -27,15 +27,10 @@
 <p>Except this was breaking, and we couldn&rsquo;t figure out why.</p>
 
 <pre><code>2014-11-12T15:03:46.247Z - debug: JOB FINISHED job_8l5pmjvp 
-
 2014-11-12T15:03:46.248Z - debug: try to delete job_8l5pmjvp masterJob undefined read from fs
-
 2014-11-12T15:03:46.248Z - debug: deleting job
-
 2014-11-12T15:03:46.554Z - debug: ERROR@read attempt | after redis signaled the job is ready job_0i5imjsd attempt no: 10 ENOENT
-
 2014-11-12T15:03:47.053Z - debug: ERROR@read attempt | after redis signaled the job is ready job_0i5imjsd attempt no: 11 ENOENT
-
 2014-11-12T15:03:47.053Z - error: ERROR@readFile job_0i5imjsd | number of attempts: 11 http://www.esquire.com/women/women-we-love/kate-mara-naked-0309 j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png ENOENT /mnt/images/j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png
 </code></pre>
 
@@ -48,19 +43,12 @@
   File: /mnt/images/j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png
 
   Size: 134775          Blocks: 264        IO Block: 1048576 regular file
-
 Device: 23h/35d Inode: 80478457    Links: 1
-
 Access: (0664/-rw-rw-r--)  Uid: (   99/  nobody)   Gid: (   99/  nobody)
-
 Context: system_u:object_r:nfs_t:s0
-
 Access: 2014-11-12 15:09:49.215002251 +0000
-
 Modify: 2014-11-12 15:09:49.239002078 +0000
-
 Change: 2014-11-12 15:09:49.239002078 +0000
-
  Birth: -
 </code></pre>
 
