@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Ntp, | Advenatures in computing]]></title>
+  <link href="http://jowrjowr.github.io/blog/categories/ntp/atom.xml" rel="self"/>
+  <link href="http://jowrjowr.github.io/"/>
+  <updated>2014-11-14T01:55:15-06:00</updated>
+  <id>http://jowrjowr.github.io/</id>
+  <author>
+    <name><![CDATA[Eric Gisse]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Time Matters]]></title>
+    <link href="http://jowrjowr.github.io/blog/2014/11/14/time-matters/"/>
+    <updated>2014-11-14T01:40:32-06:00</updated>
+    <id>http://jowrjowr.github.io/blog/2014/11/14/time-matters</id>
+    <content type="html"><![CDATA[<p>&hellip;no, not time in the philosophical or project management sense. Well yes, but not what this is about.</p>
+
+<p>In tracking an issue on a client project, a curious issue was ran into.</p>
+
+<p>Basically, the setup is such that we have a cluster of machines. One machine in the cluster farms out work to the rest of it, the cluster does the work, writes the result to NFS, and the machine that farms out the work snags the result.</p>
+
+<p>Except this was breaking, and we couldn&rsquo;t figure out why.</p>
+
+<pre><code>2014-11-12T15:03:46.247Z - debug: JOB FINISHED job_8l5pmjvp 
+
+2014-11-12T15:03:46.248Z - debug: try to delete job_8l5pmjvp masterJob undefined read from fs
+
+2014-11-12T15:03:46.248Z - debug: deleting job
+
+2014-11-12T15:03:46.554Z - debug: ERROR@read attempt | after redis signaled the job is ready job_0i5imjsd attempt no: 10 ENOENT
+
+2014-11-12T15:03:47.053Z - debug: ERROR@read attempt | after redis signaled the job is ready job_0i5imjsd attempt no: 11 ENOENT
+
+2014-11-12T15:03:47.053Z - error: ERROR@readFile job_0i5imjsd | number of attempts: 11 http://www.esquire.com/women/women-we-love/kate-mara-naked-0309 j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png ENOENT /mnt/images/j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png
+</code></pre>
+
+<p>Translated: at 15:03:47.053, the machine that wanted to find the file could not find it.</p>
+
+<p>But the file system says this:</p>
+
+<pre><code># stat /mnt/images/j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png
+
+  File: /mnt/images/j/3/r/c/6/d1u78w1u5wqqexvq5tjq6wbnd5t6abk3dxpjyxvfdnjpwbvqdxppavhdexjjuv3fetjjyuv1ehjjuvb1e9gjuvk1ddjp8b9g6cr3j_hq.png
+
+  Size: 134775          Blocks: 264        IO Block: 1048576 regular file
+
+Device: 23h/35d Inode: 80478457    Links: 1
+
+Access: (0664/-rw-rw-r--)  Uid: (   99/  nobody)   Gid: (   99/  nobody)
+
+Context: system_u:object_r:nfs_t:s0
+
+Access: 2014-11-12 15:09:49.215002251 +0000
+
+Modify: 2014-11-12 15:09:49.239002078 +0000
+
+Change: 2014-11-12 15:09:49.239002078 +0000
+
+ Birth: -
+</code></pre>
+
+<p>A careful observer will note that the file that was supposedly not missing was written two seconds <strong><em>after</em></strong>. This lead me to believe that there was an issue with timing in the code, and we went down that path.</p>
+
+<p>It was then discovered that the NFS server that hosts this data wasn&rsquo;t running NTP and was thus out of sync. The one machine in the cluster that <em>wasn&rsquo;t</em> under puppet control. My forcing of ntp is so common I didn&rsquo;t even consider the possibility that time could have been an issue.</p>
+
+<p>Once time was synchronized, the script was flipped.</p>
+
+<p>Instead of the &ldquo;missing&rdquo; file being written after the script stopped looking, it was written <em>before</em>. Given the close timings and how the issue wasn&rsquo;t reliably predictable I felt it was some sort of race condition between the two cluster nodes.</p>
+
+<p>It turns out I was right, after a fashion.</p>
+
+<p>Myself and this client have <em>not</em> had a good history with network file systems. CephFS was a saga, for example. So we switched over to NFS which is a (nominally) stable and known solution.</p>
+
+<p>So after investigating, I discover this little blurb in an nfs man page:</p>
+
+<blockquote><p>To improve performance, NFS clients cache file attributes. Every few seconds, an NFS client checks the server&rsquo;s version of each file&rsquo;s attributes for updates. Changes that occur on the server in those small intervals remain undetected until the client checks the server again. The noac option prevents clients from caching file attributes so that applications can more quickly detect file changes on the server.</p>
+
+<p>In addition to preventing the client from caching file attributes, the noac option forces application writes to become synchronous so that local changes to a file become visible on the server immediately. That way, other clients can quickly detect recent writes when they check the file&rsquo;s attributes.</p>
+
+<p>Using the noac option provides greater cache coherence among NFS clients accessing the same files, but it extracts a significant performance penalty. As such, judicious use of file locking is encouraged instead. The DATA AND METADATA COHERENCE section contains a detailed discussion of these trade-offs.</p>
+
+<p><a href="http://linux.die.net/man/5/nfs">http://linux.die.net/man/5/nfs</a></p></blockquote>
+
+<p>It turns out that an NFS client caches file attributes in a folder, which extends to whether a file <em>actually exists</em>. Surprisingly not once in quite a few years of battling NFS has this ever come up.</p>
+
+<p>The moral of the story here isn&rsquo;t (just) that networked file systems can be hard, but that it is super important to make sure that your servers times are synchronized. Because if they aren&rsquo;t, you can find yourself looking down an <em>entirely wrong</em> troubleshooting path.</p>
+]]></content>
+  </entry>
+  
+</feed>
